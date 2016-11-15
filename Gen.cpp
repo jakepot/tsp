@@ -23,12 +23,12 @@ std::vector <Point> generate(int n) {
 int main(int argc, char **argv) {
     int n;
     if (argc < 2) {
-        cerr << "Podaj liczbę punktów do wygenerowania jako parametr!";
+        cerr << "Podaj liczbę punktów do wygenerowania jako parametr!" << endl;
         return 1;
     }
     n = atoi(argv[1]); // n is set to 0 if it can't be converted
     if (n < 2) {
-        cerr << "Należy wygenerować co najmniej dwa punkty!";
+        cerr << "Należy wygenerować co najmniej dwa punkty!" << endl;
     }
 
     auto points = generate(n);
