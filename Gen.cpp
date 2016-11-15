@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
     }
 
     auto points = generate(n);
+    cout << n << endl;
     for (auto point: points) {
         cout << point << endl;
     }
