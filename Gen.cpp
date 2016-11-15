@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
     n = atoi(argv[1]); // n is set to 0 if it can't be converted
     if (n < 2) {
         cerr << "Należy wygenerować co najmniej dwa punkty!" << endl;
+        return 1;
     }
 
     auto points = generate(n);
