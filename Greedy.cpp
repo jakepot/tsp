@@ -8,7 +8,7 @@
 #include "Point.h"
 using namespace std;
 
-list<Point>::iterator find_closest(list<Point> &points, Point &start) {
+list<Point>::iterator find_closest(list<Point> &points, Point &start, double &segment) {
     auto it = points.begin();
     auto closest = it;
     double closest_distance = distance(start, *closest);
@@ -21,10 +21,12 @@ list<Point>::iterator find_closest(list<Point> &points, Point &start) {
             closest_distance = dist;
         }
     }
+    segment = closest_distance;
     return closest;
 }
 
-void greedy(Point points_array[], int n) {
+double greedy(Point points_array[], int n) {
+    double total = 0.0;
     cout << n << endl;
     list<Point> points(points_array, points_array+n);
     auto it = points.begin();
@@ -33,12 +35,15 @@ void greedy(Point points_array[], int n) {
     cout << point << endl;
 
     int i = 1;
+    double segment;
     while (!points.empty()) {
-        auto closest = find_closest(points, point);
+        auto closest = find_closest(points, point, segment);
         point = *closest;
         cout << point << endl;
         points.erase(closest);
+        total += segment;
     }
+    return total;
 }
 
 int main() {
@@ -54,7 +59,8 @@ int main() {
     for (int i=0; i<n; i++) {
         cin >> points[i];
     }
-    greedy(points, n);
+    double path = greedy(points, n);
+    cout << "Długość ścieżki: " << path << endl;
 
     delete points;
 

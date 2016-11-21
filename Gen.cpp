@@ -14,7 +14,7 @@ std::vector <Point> generate(int n) {
     srand((unsigned)time(NULL));
 
     for (int i = 0; i < n; i++){
-        points.push_back(Point(i, rand()%100, rand()%100));
+        points.push_back(Point(i, 1+rand()%999, 1+rand()%999));
     }
 
     return points;
