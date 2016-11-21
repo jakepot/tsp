@@ -31,6 +31,7 @@ double greedy(Point points_array[], int n) {
     list<Point> points(points_array, points_array+n);
     auto it = points.begin();
     Point point = *it;
+    Point first = point; // copy
     points.erase(it);
     cout << point << endl;
 
@@ -43,6 +44,9 @@ double greedy(Point points_array[], int n) {
         points.erase(closest);
         total += segment;
     }
+    // return to the beginning
+    total += distance(point, first);
+
     return total;
 }
 
