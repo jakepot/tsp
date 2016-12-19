@@ -3,14 +3,9 @@
 //
 
 #include <iostream>
-//#include <list>
-//#include <limits>
-#include <cstdlib>
-#include <ctime>
-#include <cmath>
 #include <set>
 #include <vector>
-//#include <iterator>
+#include <cmath>
 #include "Point.h"
 #include "Ant.h"
 
@@ -28,46 +23,61 @@ int n; // number of cities
 Point *points;
 double ** phero;
 
+int discreteRandom(vector< pair<int, double> > probs) {
+    double random = (double)rand() / RAND_MAX;
+
+    double last = 0;
+    for (auto &item: probs) {
+        item.second += last;
+        last = item.second;
+        if (random < item.second) {
+            return item.first;
+        }
+    }
+    throw 3; // it should never happen
+}
+
 void findNext(Ant &ant) {
-    srand(time(NULL));
 
     int qq = rand() % 1000;
-
     int nextInd = 0;
 
-    if (qq <= q){
-        int s = rand() %(n - ant.currentInd + 1);
-        int t = 0;
-
-        for (int i = 1; i <= n; i++){
-            if (ant.visited[i] == 0)
-                t++;
-            if (s == t){
-                nextInd = i;
-                break;
-            }
-        }
-    }
-    else {
-        double max = 0;
+    if (qq <= q) {
+        // idź do całkowicie losowo wybranego nieodwiedzonego wierzchołka
+        vector<int> unvisited;
         for (int i = 1; i <= n; i++) {
-            if (ant.visited[i] == 0) {
-                //cout << i << endl;
-                double s = phero[i][ant.route[ant.currentInd].getId()]
-                           * pow(1.0 / distance(points[i], points[ant.route[ant.currentInd].getId()]), beta);
-                if (s > max) {
-                    max = s;
-                    nextInd = i;
-                }
-            }
+            if (ant.visited[i]) continue;
+            unvisited.push_back(i);
         }
+        nextInd = unvisited[rand()%unvisited.size()];
+    } else {
+        // kieruj się feromonami
+        vector< pair<int, double> > probs;
+        double totalProb = 0;
+        int currentId = ant.route[ant.currentInd].getId();
+        for (int i = 1; i <= n; i++) {
+            if (ant.visited[i]) continue;
+            double prob = pow(phero[i][currentId], alpha) * pow(1.0 / distance(points[i], points[currentId]), beta);
+            totalProb += prob;
+
+            probs.emplace_back(i, prob);
+        }
+        for (auto &item: probs) {
+            item.second /= totalProb;
+        }
+        nextInd = discreteRandom(probs);
     }
 
-    cout << nextInd << endl; // test
+    if (nextInd == 0) {
+        throw 0;
+    }
 
+    cout << "Mrówka idzie do " << nextInd << endl; // test
+
+    ant.distance += distance(points[ant.route[ant.currentInd].getId()], points[nextInd]);
     ant.currentInd++;
     ant.route[ant.currentInd] = points[nextInd];
-    ant.visited[points[nextInd].getId()] = 1;
+    ant.visited[nextInd] = 1;
 }
 
 void localEvaporate(){ // chyba
@@ -78,18 +88,16 @@ void localEvaporate(){ // chyba
     }
 }
 
-void localUpdate(Ant ant){ // dla kazdej mrowki
-    phero[ant.route[ant.currentInd].getId()][ant.route[ant.currentInd-1].getId()] += (fi * p); // opcja 2. (ACS)
-    phero[ant.route[ant.currentInd-1].getId()][ant.route[ant.currentInd].getId()] += (fi * p);
+void localUpdate(Ant &ant){ // dla kazdej mrówki
+    int curr = ant.route[ant.currentInd].getId();
+    int prev = ant.route[ant.currentInd-1].getId();
+
+    phero[curr][prev] += (fi * p); // opcja 2. (ACS)
+    phero[prev][curr] += (fi * p);
 }
 
-double routeTotal(Ant ant){
-    double total = 0.0;
-    for (int i = 1; i < n; i++){
-        total += distance(ant.route[i],ant.route[i-1]);
-    }
-    total += distance(ant.route[0],ant.route[n-1]);
-    return total;
+double routeTotal(Ant &ant){
+    return ant.distance;
 }
 
 void globalEvaporate(){
@@ -101,13 +109,13 @@ void globalEvaporate(){
 }
 
 void globalUpdate(vector<Ant> ants){
-    double best = 1000000.0; // very big number
-    Point bestRoute[n];
+    double best = routeTotal(ants[0]);
+    Point *bestRoute = ants[0].route;
     for (auto &a : ants){
         double route = routeTotal(a);
         if (route < best){
             best = route;
-            //copy(begin(a.route), end(a.route), begin(bestRoute)); // HELP nie przechodzi
+            bestRoute = a.route;
         }
     }
     for (int i = 1; i < n; i++){
@@ -118,19 +126,22 @@ void globalUpdate(vector<Ant> ants){
     phero[bestRoute[n-1].getId()][bestRoute[0].getId()] += (alpha * 1.0/best);
 
     cout << "Shortest route length: " << best << endl;
-    cout << "Shortest route: ";
+    cout << "Shortest route: " << endl;
     for (int i = 0; i < n; i++){
-        cout << bestRoute[i].getId() << " -> ";
+        cout << bestRoute[i].getId() << " " << bestRoute[i].getX() << " " << bestRoute[i].getY() << endl;
     }
-    cout << bestRoute[0].getId();
 }
 
 
 
 int main() {
+    srand(time(NULL));
+
+
     cin >> n;
     if (n < 2) {
         cerr << "Należy podać co najmniej dwa punkty!" << endl;
+        return -1;
     }
     points = new Point[n+1];
 
@@ -149,33 +160,43 @@ int main() {
         }
     }
 
+
+
     // stworzenie mrowek
     set<int> cities;
 
-    srand(time(0));
-
     while (cities.size() < (a * n))
-        cities.insert(rand()%n+1);
+        cities.insert(rand()%n + 1);
+
+    cout << "Liczba miast początkowych: " << cities.size() << endl;
+
+
 
     vector<Ant> ants;
-    auto it = cities.begin();
 
-    while(it!=cities.end()){
-        ants.emplace_back(n, points[*it]);
-        it++;
+    // wybranie miasta początkowego dla każdej mrówki
+    for (int city: cities){
+        ants.emplace_back(n, points[city]);
     }
 
-    for (int i = 0; i < n-1; i++){
-        for (auto &it1 : ants){
-            findNext(it1);
+    for (int i = 0; i < n-1; i++) {
+        // szukana ścieżka ma długość równą liczbie miast
+
+        for (auto &ant : ants) {
+            findNext(ant);
         }
+
         localEvaporate();
-        for (auto &it2 : ants){
-            localUpdate(it2);
+
+        for (auto &ant : ants){
+            localUpdate(ant);
         }
     }
-    //globalEvaporate();
-    //globalUpdate(ants);
+
+    cout << "Loop is over" << endl;
+
+    globalEvaporate();
+    globalUpdate(ants);
 
     //i to wszystko w petli
 

@@ -14,6 +14,7 @@ public:
     int currentInd;
     int * visited;
     Point * route;
+    double distance = 0;
 
     Ant(int size, Point start);
     //void current();
